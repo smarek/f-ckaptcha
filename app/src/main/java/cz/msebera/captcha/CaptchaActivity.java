@@ -76,6 +76,7 @@ public final class CaptchaActivity extends Activity {
         @Override
         public void onError(int error) {
             Log.d(TAG, String.format("onError %d", error));
+            recognitionStarted = false;
             switch (error) {
                 case SpeechRecognizer.ERROR_AUDIO:
                     scoreLabel.setText("Audio is Fucked!");
