@@ -10,6 +10,7 @@ import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,7 +25,10 @@ public final class CaptchaActivity extends Activity {
     private SpeechRecognizer speech;
     private final Handler handler = new Handler();
     private int currentOrientation = -1;
-    private TextView score;
+    private int count = 0;
+    private boolean listening = false;
+    private ProgressBar voiceLevel;
+    private TextView score, scoreLabel;
     public static final String TAG = "Fuckaptcha";
 
     private final RemainingTimeListener remainingTimeListener = new RemainingTimeListener() {
@@ -51,6 +55,7 @@ public final class CaptchaActivity extends Activity {
 
         @Override
         public void onRmsChanged(float rmsdB) {
+            voiceLevel.setProgress((int) ((rmsdB + 120) / 1.8));
         }
 
         @Override
@@ -69,39 +74,39 @@ public final class CaptchaActivity extends Activity {
             Log.d(TAG, String.format("onError %d", error));
             switch (error) {
                 case SpeechRecognizer.ERROR_AUDIO:
-                    score.setText("Audio is Fucked!");
+                    scoreLabel.setText("Audio is Fucked!");
                     stopFuckingAround();
                     break;
                 case SpeechRecognizer.ERROR_CLIENT:
-                    score.setText("Client is Fucked!");
+                    scoreLabel.setText("Client is Fucked!");
                     stopFuckingAround();
                     break;
                 case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
-                    score.setText("Permissions are Fucked Up!");
+                    scoreLabel.setText("Permissions are Fucked Up!");
                     stopFuckingAround();
                     break;
                 case SpeechRecognizer.ERROR_NETWORK:
-                    score.setText("Network is Fucked Up!");
+                    scoreLabel.setText("Network is Fucked Up!");
                     stopFuckingAround();
                     break;
                 case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:
-                    score.setText("Network timeout, Fuck!");
+                    scoreLabel.setText("Network timeout, Fuck!");
                     startVoiceRecognition();
                     break;
                 case SpeechRecognizer.ERROR_NO_MATCH:
-                    score.setText("Stop Mumbling!");
+                    scoreLabel.setText("Stop Mumbling!");
                     startVoiceRecognition();
                     break;
                 case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
-                    score.setText("Recognizer busy, OMG!");
-                    stopFuckingAround();
+                    scoreLabel.setText("Recognizer busy, OMG!");
+                    startVoiceRecognition();
                     break;
                 case SpeechRecognizer.ERROR_SERVER:
-                    score.setText("Server error, WTF?");
+                    scoreLabel.setText("Server error, WTF?");
                     stopFuckingAround();
                     break;
                 case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
-                    score.setText("SWEAR GOD DAMMIT!");
+                    scoreLabel.setText("SWEAR GOD DAMMIT!");
                     startVoiceRecognition();
                     break;
                 default:
@@ -131,8 +136,13 @@ public final class CaptchaActivity extends Activity {
                 return;
             }
             for (String s : partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)) {
-                Log.d(TAG, String.format("%s", s));
+                for (String word : s.split(" ")) {
+                    if (word.contains("*")) {
+                        count++;
+                    }
+                }
             }
+            score.setText(String.format("%d%%", count));
             startVoiceRecognition();
         }
 
@@ -152,11 +162,13 @@ public final class CaptchaActivity extends Activity {
 
         ((TextView) findViewById(R.id.difficulty)).setText(getString(R.string.difficulty, captchaSupport.getDifficulty()));
         score = (TextView) findViewById(R.id.score);
+        scoreLabel = (TextView) findViewById(R.id.score_label);
+        voiceLevel = (ProgressBar) findViewById(R.id.voiceLevel);
     }
 
     private void killVoiceRecognition() {
         if (speech != null) {
-            Log.d(TAG, "killVoiceRecognition", new Error("StackTrace"));
+            Log.d(TAG, "killVoiceRecognition");
             speech.stopListening();
             speech.destroy();
             speech = null;
@@ -168,18 +180,24 @@ public final class CaptchaActivity extends Activity {
             speech = SpeechRecognizer.createSpeechRecognizer(this);
             speech.setRecognitionListener(recognitionListener);
         }
-        speech.cancel();
+        if (listening) {
+            listening = false;
+            speech.cancel();
+        }
         Intent startIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        startIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        startIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
-        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300);
-        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1000);
-        startIntent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
-        startIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+//        startIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+//        startIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+//        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300);
+//        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1000);
+//        startIntent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        startIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+        startIntent.putExtra("android.speech.extra.DICTATION_MODE", true);
         speech.startListening(startIntent);
+        listening = true;
     }
 
     private void stopFuckingAround() {
+        voiceLevel.setProgress(0);
         killVoiceRecognition();
         handler.removeCallbacksAndMessages(null);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR);
