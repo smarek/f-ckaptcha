@@ -218,7 +218,7 @@ public final class CaptchaActivity extends Activity {
         startIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         startIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300);
-        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1000);
+        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 300);
         if (Build.VERSION.SDK_INT >= 23) {
             startIntent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
         }
