@@ -235,7 +235,6 @@ public final class CaptchaActivity extends Activity {
     }
 
     private void fuckUpScreenOrientation() {
-        if (currentOrientation < 0) return;
         if (currentOrientation == -1) {
             currentOrientation = getWindowManager().getDefaultDisplay().getOrientation();
         }
