@@ -1,8 +1,10 @@
 package cz.msebera.captcha;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -10,6 +12,8 @@ import android.os.Handler;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -178,6 +182,8 @@ public final class CaptchaActivity extends Activity {
         score = (TextView) findViewById(R.id.score);
         scoreLabel = (TextView) findViewById(R.id.score_label);
         voiceLevel = (ProgressBar) findViewById(R.id.voiceLevel);
+
+        checkAudioPermission();
     }
 
     private void setDifficulty() {
@@ -324,5 +330,22 @@ public final class CaptchaActivity extends Activity {
         super.onDestroy();
         stopFuckingAround();
         captchaSupport.destroy();
+    }
+
+    private void checkAudioPermission() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            recognitionStarted = true;
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 1);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (grantResults.length != 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            recognitionStarted = false;
+            startVoiceRecognition();
+            return;
+        }
+        checkAudioPermission();
     }
 }
