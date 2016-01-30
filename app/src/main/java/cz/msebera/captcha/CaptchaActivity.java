@@ -106,7 +106,7 @@ public final class CaptchaActivity extends Activity {
                     break;
                 case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
                     scoreLabel.setText("Recognizer busy, OMG!");
-                    startVoiceRecognition();
+                    stopFuckingAround();
                     break;
                 case SpeechRecognizer.ERROR_SERVER:
                     scoreLabel.setText("Server error, WTF?");
@@ -125,18 +125,18 @@ public final class CaptchaActivity extends Activity {
         @Override
         public void onResults(Bundle results) {
             Log.d(TAG, "onResults");
-            workStringList(results);
+            workStringList(results, false);
             startVoiceRecognition();
         }
 
         @Override
         public void onPartialResults(Bundle partialResults) {
             Log.d(TAG, "onPartialResults");
-            workStringList(partialResults);
+            workStringList(partialResults, true);
             startVoiceRecognition();
         }
 
-        private void workStringList(Bundle results) {
+        private void workStringList(Bundle results, boolean incrementOnlyOneShot) {
             List<String> resultStrings = results == null ? null : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
             if (results == null || resultStrings == null) {
                 startVoiceRecognition();
@@ -150,6 +150,9 @@ public final class CaptchaActivity extends Activity {
                     if (word.contains("*")) {
                         count += difficultyCoefficient;
                         checkFinished();
+                        if (incrementOnlyOneShot) {
+                            break;
+                        }
                     }
                 }
             }
