@@ -29,6 +29,7 @@ public final class CaptchaActivity extends Activity {
     private final Handler handler = new Handler();
     private int currentOrientation = -1;
     private int difficultyCoefficient = 20;
+    private long lastTimestamp = 0;
     private int count = 0;
     private boolean recognitionStarted = false;
     private ProgressBar voiceLevel;
@@ -59,6 +60,7 @@ public final class CaptchaActivity extends Activity {
 
         @Override
         public void onRmsChanged(float rmsdB) {
+            lastTimestamp = System.currentTimeMillis();
             voiceLevel.setProgress((int) ((rmsdB + 120) / 1.8));
         }
 
@@ -200,7 +202,7 @@ public final class CaptchaActivity extends Activity {
             speech.stopListening();
             speech.destroy();
             speech = null;
-            recognitionStarted = true;
+            recognitionStarted = false;
         }
     }
 
@@ -260,6 +262,10 @@ public final class CaptchaActivity extends Activity {
             @Override
             public void run() {
                 fuckUpScreenOrientation();
+                if (lastTimestamp != 0 && (System.currentTimeMillis() - lastTimestamp) > 2500) {
+                    killVoiceRecognition();
+                    startVoiceRecognition();
+                }
             }
         }, 1000);
     }
