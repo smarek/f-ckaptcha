@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="cz.msebera.captcha">
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name">
+
+        <activity
+            android:name=".CaptchaActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|layoutDirection|locale|uiMode|screenSize|screenLayout|navigation|smallestScreenSize|touchscreen"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+
+            <meta-data
+                android:name="com.urbandroid.sleep.captcha.meta.has_difficulty"
+                android:value="true" />
+
+            <intent-filter>
+                <action android:name="com.urbandroid.sleep.captcha.intent.action.OPEN" />
+                <!--<action android:name="com.urbandroid.sleep.captcha.intent.action.CONFIG" />-->
+
+                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
