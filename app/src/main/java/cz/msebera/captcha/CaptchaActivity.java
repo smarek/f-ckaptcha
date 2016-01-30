@@ -124,7 +124,14 @@ public final class CaptchaActivity extends Activity {
             }
             for (String s : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)) {
                 Log.d(TAG, String.format("%s", s));
+                for (String word : s.split(" ")) {
+                    Log.d(TAG, String.format("%s", word));
+                    if (word.contains("*")) {
+                        count++;
+                    }
+                }
             }
+            score.setText(String.format("%d%%", count));
             startVoiceRecognition();
         }
 
@@ -136,7 +143,9 @@ public final class CaptchaActivity extends Activity {
                 return;
             }
             for (String s : partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)) {
+                Log.d(TAG, String.format("%s", s));
                 for (String word : s.split(" ")) {
+                    Log.d(TAG, String.format("%s", word));
                     if (word.contains("*")) {
                         count++;
                     }
@@ -176,6 +185,7 @@ public final class CaptchaActivity extends Activity {
     }
 
     private void startVoiceRecognition() {
+        Log.d(TAG, "startVoiceRecognition");
         if (speech == null) {
             speech = SpeechRecognizer.createSpeechRecognizer(this);
             speech.setRecognitionListener(recognitionListener);
@@ -204,6 +214,7 @@ public final class CaptchaActivity extends Activity {
     }
 
     private void fuckUpScreenOrientation() {
+        if (currentOrientation < 0) return;
         if (currentOrientation == -1) {
             currentOrientation = getWindowManager().getDefaultDisplay().getOrientation();
         }
