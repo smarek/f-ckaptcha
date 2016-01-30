@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.speech.RecognitionListener;
@@ -18,6 +19,8 @@ import com.urbandroid.sleep.captcha.CaptchaSupport;
 import com.urbandroid.sleep.captcha.CaptchaSupportFactory;
 import com.urbandroid.sleep.captcha.RemainingTimeListener;
 
+import java.util.List;
+
 public final class CaptchaActivity extends Activity {
 
     private CaptchaSupport captchaSupport;
@@ -25,11 +28,12 @@ public final class CaptchaActivity extends Activity {
     private SpeechRecognizer speech;
     private final Handler handler = new Handler();
     private int currentOrientation = -1;
+    private int difficultyCoefficient = 20;
     private int count = 0;
-    private boolean listening = false;
+    private boolean recognitionStarted = false;
     private ProgressBar voiceLevel;
     private TextView score, scoreLabel;
-    public static final String TAG = "Fuckaptcha";
+    public static final String TAG = "F*ckaptcha";
 
     private final RemainingTimeListener remainingTimeListener = new RemainingTimeListener() {
         @Override
@@ -118,41 +122,35 @@ public final class CaptchaActivity extends Activity {
         @Override
         public void onResults(Bundle results) {
             Log.d(TAG, "onResults");
-            if (results == null || results.get(SpeechRecognizer.RESULTS_RECOGNITION) == null) {
-                startVoiceRecognition();
-                return;
-            }
-            for (String s : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)) {
-                Log.d(TAG, String.format("%s", s));
-                for (String word : s.split(" ")) {
-                    Log.d(TAG, String.format("%s", word));
-                    if (word.contains("*")) {
-                        count++;
-                    }
-                }
-            }
-            score.setText(String.format("%d%%", count));
+            workStringList(results);
             startVoiceRecognition();
         }
 
         @Override
         public void onPartialResults(Bundle partialResults) {
             Log.d(TAG, "onPartialResults");
-            if (partialResults == null || partialResults.get(SpeechRecognizer.RESULTS_RECOGNITION) == null) {
+            workStringList(partialResults);
+            startVoiceRecognition();
+        }
+
+        private void workStringList(Bundle results) {
+            List<String> resultStrings = results == null ? null : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+            if (results == null || resultStrings == null) {
                 startVoiceRecognition();
                 return;
             }
-            for (String s : partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)) {
+            for (String s : resultStrings) {
+                captchaSupport.alive();
                 Log.d(TAG, String.format("%s", s));
                 for (String word : s.split(" ")) {
                     Log.d(TAG, String.format("%s", word));
                     if (word.contains("*")) {
-                        count++;
+                        count += difficultyCoefficient;
+                        checkFinished();
                     }
                 }
             }
             score.setText(String.format("%d%%", count));
-            startVoiceRecognition();
         }
 
         @Override
@@ -170,9 +168,29 @@ public final class CaptchaActivity extends Activity {
         captchaSupport.setRemainingTimeListener(remainingTimeListener);
 
         ((TextView) findViewById(R.id.difficulty)).setText(getString(R.string.difficulty, captchaSupport.getDifficulty()));
+        setDifficulty();
         score = (TextView) findViewById(R.id.score);
         scoreLabel = (TextView) findViewById(R.id.score_label);
         voiceLevel = (ProgressBar) findViewById(R.id.voiceLevel);
+    }
+
+    private void setDifficulty() {
+        final int[] diffMap = new int[]{
+                100,
+                25,
+                20,
+                15,
+                10,
+                5
+        };
+        difficultyCoefficient = diffMap[captchaSupport.getDifficulty()];
+    }
+
+    private void checkFinished() {
+        if (count >= 100) {
+            captchaSupport.solved();
+            finish();
+        }
     }
 
     private void killVoiceRecognition() {
@@ -181,29 +199,31 @@ public final class CaptchaActivity extends Activity {
             speech.stopListening();
             speech.destroy();
             speech = null;
+            recognitionStarted = true;
         }
     }
 
-    private void startVoiceRecognition() {
+    private synchronized void startVoiceRecognition() {
         Log.d(TAG, "startVoiceRecognition");
+        if (recognitionStarted) {
+            return;
+        }
         if (speech == null) {
             speech = SpeechRecognizer.createSpeechRecognizer(this);
             speech.setRecognitionListener(recognitionListener);
         }
-        if (listening) {
-            listening = false;
-            speech.cancel();
-        }
+        recognitionStarted = true;
         Intent startIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-//        startIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-//        startIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
-//        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300);
-//        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1000);
-//        startIntent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        startIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        startIntent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 300);
+        startIntent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1000);
+        if (Build.VERSION.SDK_INT >= 23) {
+            startIntent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        }
         startIntent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         startIntent.putExtra("android.speech.extra.DICTATION_MODE", true);
         speech.startListening(startIntent);
-        listening = true;
     }
 
     private void stopFuckingAround() {
